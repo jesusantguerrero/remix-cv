@@ -1,7 +1,7 @@
-import type { MetaFunction, LoaderFunction, ActionFunction } from "remix";
+import { MetaFunction, LoaderFunction, ActionFunction, useActionData, useTransition } from "remix";
 import { useLoaderData, json, Form, redirect } from "remix";
 import { IndexData } from "../../types";
-import { getFormData } from "../../utils";
+import { createCv, getFormData } from "../../utils";
 
 
 const theVaina: IndexData = {
@@ -31,15 +31,15 @@ export let action: ActionFunction = async ({ request }) => {
   if (errors) {
     return errors;
   }
-  console.log(data.name);
-  theVaina.name = data.name;
-  return redirect('/');
+  const cvId = createCv(data);
+  return redirect(`/cvs/${cvId}`);
 }
 
 // https://remix.run/guides/routing#index-routes
 export default function Index() {
   let data = useLoaderData<IndexData>();
-  
+  const errors = useActionData();
+  const transition = useTransition();
 
   return (
     <div className="remix__page">
@@ -50,11 +50,17 @@ export default function Index() {
       <aside>
         <Form method="post">
           <div>
-            <label>Name</label>
-            <input type="text" name="name" />
+            <label>Name:
+              {errors?.name && <em>Name is required</em>}
+              <input type="text" name="name" />
+            </label>
           </div>
           <p>
-            <button type="submit">Save data</button>
+            <button type="submit">
+            {transition.submission
+            ? "Creating..."
+            : "Create new cv"}
+            </button>
           </p>
         </Form>
       </aside>

@@ -1,54 +1,32 @@
-import { useCatch, Link, json, useLoaderData } from "remix";
+import { useCatch, useLoaderData } from "remix";
 import type { LoaderFunction, MetaFunction } from "remix";
+import { getCvById } from "../../../utils";
 
-// The `$` in route filenames becomes a pattern that's parsed from the URL and
-// passed to your loaders so you can look up data.
-// - https://remix.run/api/conventions#loader-params
+
 export let loader: LoaderFunction = async ({ params }) => {
   // pretend like we're using params.id to look something up in the db
+  let cv: Record<string, any>|null = null;
+  if (params.id) {
+    cv = await getCvById(params.id);
+  }
 
-  if (params.id === "this-record-does-not-exist") {
-    // If the record doesn't exist we can't render the route normally, so
-    // instead we throw a 404 reponse to stop running code here and show the
-    // user the catch boundary.
+  if (!cv) {
     throw new Response("Not Found", { status: 404 });
   }
 
-  // now pretend like the record exists but the user just isn't authorized to
-  // see it.
-  if (params.id === "shh-its-a-secret") {
-    // Again, we can't render the component if the user isn't authorized. You
-    // can even put data in the response that might help the user rectify the
-    // issue! Like emailing the webmaster for access to the page. (Oh, right,
-    // `json` is just a Response helper that makes it easier to send JSON
-    // responses).
-    throw json({ webmasterEmail: "hello@remix.run" }, { status: 401 });
-  }
-
-  // Sometimes your code just blows up and you never anticipated it. Remix will
-  // automatically catch it and send the UI to the error boundary.
-  if (params.id === "kaboom") {
-    lol();
-  }
-
-  // but otherwise the record was found, user has access, so we can do whatever
-  // else we needed to in the loader and return the data. (This is boring, we're
-  // just gonna return the params.id).
-  return { param: params.id };
+  return cv;
 };
 
 export default function ParamDemo() {
   let data = useLoaderData();
   return (
     <h1>
-      The param is <i style={{ color: "red" }}>{data.param}</i>
+      The param is <i style={{ color: "red" }}>{data.name}</i>
     </h1>
   );
 }
 
-// https://remix.run/api/conventions#catchboundary
-// https://remix.run/api/remix#usecatch
-// https://remix.run/api/guides/not-found
+
 export function CatchBoundary() {
   let caught = useCatch();
 
@@ -87,8 +65,6 @@ export function CatchBoundary() {
   );
 }
 
-// https://remix.run/api/conventions#errorboundary
-// https://remix.run/api/guides/not-found
 export function ErrorBoundary({ error }: { error: Error }) {
   console.error(error);
   return (
@@ -105,6 +81,6 @@ export function ErrorBoundary({ error }: { error: Error }) {
 
 export let meta: MetaFunction = ({ data }) => {
   return {
-    title: data ? `Param: ${data.param}` : "Oops...",
+    title: data ? `Param: ${data.name}` : "Oops...",
   };
 };
